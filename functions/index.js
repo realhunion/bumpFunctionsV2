@@ -53,26 +53,27 @@ function getfcmToken(userID) {
 }
 
 
-//Gets [circleID, circleName, circleEmoji, timestamp]
+//Gets [circleID, circleName, circleEmoji, timestamp, firstMsgText]
 function getFeedChatInfo(chatID) {
     return new Promise(function (resolve, reject) {
         db.collection('Feed').doc(chatID).get()
             .then(doc => {
                 if (!doc.exists) {
                     console.log('No such user found to be able to get his/her fcmToken.');
-                    resolve([null, null, null, null]);
+                    resolve([null, null, null, null, null]);
                 } else {
                     // if (doc.data()["fcmToken"] && doc.data()["typePhone"] && doc.data()["version"]) {
-                    if (doc.data()["circleID"] && doc.data()["circleName"] && doc.data()["circleEmoji"] && doc.data()["timeLaunched"]) {
+                    if (doc.data()["circleID"] && doc.data()["circleName"] && doc.data()["circleEmoji"] && doc.data()["timeLaunched"] && doc.data()["firstMsgText"]) {
                         let circleID = doc.data()["circleID"];
                         let circleName = doc.data()["circleName"];
                         let circleEmoji = doc.data()["circleEmoji"];
                         let timeLaunched = doc.data()["timeLaunched"];
+                        let firstMsgText = doc.data()["firstMsgText"];
                         // console.log('chat info found', [circleID, circleName, circleEmoji, timeLaunched]);
-                        resolve([circleID, circleName, circleEmoji, timeLaunched]);
+                        resolve([circleID, circleName, circleEmoji, timeLaunched, firstMsgText]);
 
                     } else {
-                      resolve([null, null, null, null]);
+                      resolve([null, null, null, null, null]);
                     }
                 }
                 return;
@@ -220,16 +221,17 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
       var circleName = feedChatInfoArray[1];
       var circleEmoji = feedChatInfoArray[2];
       var timeLaunched = feedChatInfoArray[3];
+      var firstMsgText = feedChatInfoArray[4];
 
       console.log("popoff 1", timeLaunched);
       console.log("popoff 1.5", msgTimestamp);
       if (timeLaunched.isEqual(msgTimestamp)) {
         // return sendnotif to circle followers
-        return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID);
+        return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText);
       } else {
         console.log("popoff 2");
         // return sendnotif to chat followers
-        return sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID);
+        return sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText);
       }
 
     })
@@ -242,7 +244,7 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 // send notification to chat followers. on 2nd 3rd 4th 5th.
 
 
-function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID) {
+function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText) {
 
         console.log("Startign circle launch notifiction functions")
         const p1 = getCircleFollowerIDArray(circleID);
@@ -286,6 +288,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                     data: {
                       chatID: chatID,
                       msgText: msgText,
+                      firstMsgText: firstMsgText,
                       circleID: circleID,
                       circleName: circleName,
                       circleEmoji: circleEmoji,
@@ -309,10 +312,16 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
               }
               if (typePhone === 2) {
                 var androidPayload = {
+                  //Launch
                     data: {
                       title: circleEmoji + " · " + circleName,
                       body: msgText,
                       chatID: chatID,
+                      msgText: msgText,
+                      firstMsgText: firstMsgText,
+                      circleID: circleID,
+                      circleName: circleName,
+                      circleEmoji: circleEmoji,
                     },
                     android: {
                       priority: "high",
@@ -333,7 +342,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
 
 
 
-function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID) {
+function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText) {
 
             var chatUArray = [];
 
@@ -383,6 +392,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
 
                   if (typePhone === 1) {
+                    //Reply Notif.
                     var iosPayload = {
                         notification: {
                             title: circleName + unreadMsgsString,
@@ -391,6 +401,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                         data: {
                           chatID: chatID,
                           msgText: msgText,
+                          firstMsgText: firstMsgText,
                           circleID: circleID,
                           circleName: circleName,
                           circleEmoji: circleEmoji,
@@ -413,11 +424,17 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                     payloadArray.push(iosPayload);
                   }
                   if (typePhone === 2) {
+                    //Reply Notif.
                     var androidPayload = {
                         data: {
-                          title: circleName,
+                          title: circleName + unreadMsgsString,
                           body: msgUsername + ": " + msgText,
                           chatID: chatID,
+                          msgText: msgText,
+                          firstMsgText: firstMsgText,
+                          circleID: circleID,
+                          circleName: circleName,
+                          circleEmoji: circleEmoji,
                         },
                         android: {
                           priority: "high",
