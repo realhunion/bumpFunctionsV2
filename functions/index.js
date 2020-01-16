@@ -36,8 +36,8 @@ function getfcmToken(userID) {
                        }
                     }
                     if (doc.data()["fcmToken"] && doc.data()["typePhone"]) {
-                        let fcmToken = doc.data()["fcmToken"];
-                        let typePhone = doc.data()["typePhone"];
+                        const fcmToken = doc.data()["fcmToken"];
+                        const typePhone = doc.data()["typePhone"];
                         console.log("YES TOKEN", fcmToken);
                         resolve([fcmToken, typePhone]);
                     } else {
@@ -64,11 +64,11 @@ function getFeedChatInfo(chatID) {
                 } else {
                     // if (doc.data()["fcmToken"] && doc.data()["typePhone"] && doc.data()["version"]) {
                     if (doc.data()["circleID"] && doc.data()["circleName"] && doc.data()["circleEmoji"] && doc.data()["timeLaunched"] && doc.data()["firstMsgText"]) {
-                        let circleID = doc.data()["circleID"];
-                        let circleName = doc.data()["circleName"];
-                        let circleEmoji = doc.data()["circleEmoji"];
-                        let timeLaunched = doc.data()["timeLaunched"];
-                        let firstMsgText = doc.data()["firstMsgText"];
+                        const circleID = doc.data()["circleID"];
+                        const circleName = doc.data()["circleName"];
+                        const circleEmoji = doc.data()["circleEmoji"];
+                        const timeLaunched = doc.data()["timeLaunched"];
+                        const firstMsgText = doc.data()["firstMsgText"];
                         // console.log('chat info found', [circleID, circleName, circleEmoji, timeLaunched]);
                         resolve([circleID, circleName, circleEmoji, timeLaunched, firstMsgText]);
 
@@ -102,16 +102,14 @@ function getCircleFollowerIDArray(circleID) {
     return new Promise(function (resolve, reject) {
         db.collection('LaunchCircles').doc(circleID).collection('Followers').get()
             .then(snapshot => {
-              console.log("isLaunchCircle circle empty", circleID, "hmm", snapshot.empty);
               if (snapshot.empty) {
                 resolve([]);
                 return;
               }
-              var followerIDArray = [];
+              let followerIDArray = [];
               snapshot.forEach(doc => {
                 followerIDArray.push(doc.id);
               });
-
               resolve(followerIDArray);
               return;
             })
@@ -129,13 +127,11 @@ function getChatFollowerIDArray(chatID) {
                 resolve([]);
                 return;
               }
-              var followerIDArray = [];
+              let followerIDArray = [];
               snapshot.forEach(doc => {
 
-                if ((doc.data()["isFollowing"] !== null) && (doc.data()["isFollowing"] === true))
-                {
+                if (doc.data()["isFollowing"]) {
                   followerIDArray.push(doc.id);
-
                 }
               });
               resolve(followerIDArray);
@@ -153,26 +149,27 @@ function getChatUserArray(chatID) {
             if (snapshot.empty) {
               return [];
             }
-            var userArray = [];
+            let userArray = [];
             snapshot.forEach(doc => {
 
-              if (doc.data()["isFollowing"] !== null)
-              {
-                let isFollowing = doc.data()["isFollowing"];
+              if (doc.data()["isFollowing"]) {
+
+                const isFollowing = doc.data()["isFollowing"];
                 var user;
-                if((doc.data()["unreadMsgs"] !== null) && (doc.data()["unreadMsgs"] !== undefined)) {
-                  console.log("JAMEZ0 - " + doc.data()["unreadMsgs"]);
-                  let unreadMsgs = doc.data()["unreadMsgs"];
+
+                if (doc.data()["unreadMsgs"]) {
+                  const unreadMsgs = doc.data()["unreadMsgs"];
+                  const userID = doc.id;
                   user = {
-                    userID: doc.id,
+                    userID: userID,
                     isFollowing: isFollowing,
                     unreadMsgs: unreadMsgs,
                   }
                 }
                 else {
-                  console.log("JAMEZ1 - " + doc.data()["unreadMsgs"]);
+                  const userID = doc.id;
                   user = {
-                    userID: doc.id,
+                    userID: userID,
                     isFollowing: isFollowing,
                     unreadMsgs: 0,
                   }
@@ -198,7 +195,6 @@ function getChatUserArray(chatID) {
 exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Messages/{messageID}').onCreate((snap, context) => {
 
     // Get an object representing the document
-    // e.g. {'name': 'Marie', 'age': 66}
     const newValue = snap.data();
 
     const chatID = context.params.chatID;
@@ -206,9 +202,6 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
     const msgTimestamp = newValue.timestamp;
     const msgUsername = newValue.userName;
     const msgUserID = newValue.userID;
-    // var circleID = null;
-    // var circleName = null;
-    // var timeLaunched = null;
 
 
     const p0 = getFeedChatInfo(chatID);
@@ -217,14 +210,12 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 
       console.log("YES 1", feedChatInfoArray);
 
-      var circleID = feedChatInfoArray[0];
-      var circleName = feedChatInfoArray[1];
-      var circleEmoji = feedChatInfoArray[2];
-      var timeLaunched = feedChatInfoArray[3];
-      var firstMsgText = feedChatInfoArray[4];
+      const circleID = feedChatInfoArray[0];
+      const circleName = feedChatInfoArray[1];
+      const circleEmoji = feedChatInfoArray[2];
+      const timeLaunched = feedChatInfoArray[3];
+      const firstMsgText = feedChatInfoArray[4];
 
-      console.log("popoff 1", timeLaunched);
-      console.log("popoff 1.5", msgTimestamp);
       if (timeLaunched.isEqual(msgTimestamp)) {
         // return sendnotif to circle followers
         return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText);
@@ -241,20 +232,15 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 })
 
 
-// send notification to chat followers. on 2nd 3rd 4th 5th.
-
-
+// Send notification to chat followers. on 2nd 3rd 4th 5th msg.
 function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText) {
 
-        console.log("Startign circle launch notifiction functions")
         const p1 = getCircleFollowerIDArray(circleID);
 
         const p2 = p1.then(function (followerIDArray) {
-          console.log("followerIDArray", followerIDArray, "for", circleID);
-            const tokenPromiseArray = [];
+            let tokenPromiseArray = [];
             for (var i in followerIDArray) {
-              let userID = followerIDArray[i];
-              console.log("booom", userID, " - ", msgUserID);
+              const userID = followerIDArray[i];
               if (userID !== msgUserID) {
                 tokenPromiseArray.push(getfcmToken(userID));
               }
@@ -264,23 +250,27 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
 
         const p3 = p2.then(function (tokenPromiseArray) {
           console.log("5", tokenPromiseArray.length);
-            var tokenArray = Promise.all(tokenPromiseArray);
+            const tokenArray = Promise.all(tokenPromiseArray);
             return tokenArray;
         })
 
         const p4 = p3.then(function (tokenArray) {
             console.log("6", tokenArray);
-            var tokenArray2 = tokenArray.filter(e => e[0] !== "noToken");
+            // var tokenArray2 = tokenArray.filter(e => e[0] !== "noToken");
 
-            var payloadArray = [];
+            let payloadArray = [];
 
-            for (var i in tokenArray2) {
+            for (var i in tokenArray) {
 
-              const token = tokenArray2[i][0]
-              const typePhone = tokenArray2[i][1]
+              if(tokenArray[i] === "noToken") {
+                continue;
+              }
+
+              const token = tokenArray[i][0]
+              const typePhone = tokenArray[i][1]
 
               if (typePhone === 1) {
-                var iosPayload = {
+                const iosPayload = {
                     notification: {
                         title: circleEmoji + " · " + circleName,
                         body: msgText,
@@ -311,7 +301,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                 payloadArray.push(iosPayload);
               }
               if (typePhone === 2) {
-                var androidPayload = {
+                const androidPayload = {
                   //Launch
                     data: {
                       title: circleEmoji + " · " + circleName,
@@ -344,19 +334,22 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
 
 function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText) {
 
-            var chatUArray = [];
+            //filtered chatUserArray
+            let chatUArray = [];
 
             const p1 = getChatUserArray(chatID);
 
             const p2 = p1.then(function (chatUserArray) {
 
-                chatUArray = chatUserArray;
+              console.log("40", chatUserArray);
 
-                const tokenPromiseArray = [];
+                let tokenPromiseArray = [];
                 for (var i in chatUserArray) {
-                    let userID = chatUserArray[i].userID;
+                    const chatUser = chatUserArray[i]
+                    const userID = chatUser.userID;
                     if (userID !== msgUserID) {
                       tokenPromiseArray.push(getfcmToken(userID));
+                      chatUArray.push(chatUser);
                     }
                 }
                 return tokenPromiseArray;
@@ -364,7 +357,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
             const p3 = p2.then(function (tokenPromiseArray) {
               console.log("50", tokenPromiseArray.length);
-                var tokenArray = Promise.all(tokenPromiseArray);
+                const tokenArray = Promise.all(tokenPromiseArray);
                 return tokenArray;
             })
 
@@ -372,7 +365,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                 console.log("60", tokenArray);
                 // var tokenArray2 = tokenArray.filter(e => e[0] !== "noToken");
 
-                var payloadArray = [];
+                let payloadArray = [];
 
                 for (var i in tokenArray) {
 
@@ -383,7 +376,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                   const token = tokenArray[i][0]
                   const typePhone = tokenArray[i][1]
                   const unreadMsgs = chatUArray[i].unreadMsgs;
-                  var unreadMsgsString = "";
+                  let unreadMsgsString = "";
                   if (unreadMsgs !== 0) {
                     unreadMsgsString = " (+" + unreadMsgs + " msgs)";
                   }
@@ -393,7 +386,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
                   if (typePhone === 1) {
                     //Reply Notif.
-                    var iosPayload = {
+                    const iosPayload = {
                         notification: {
                             title: circleName + unreadMsgsString,
                             body: msgUsername + ": " + msgText,
@@ -425,7 +418,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                   }
                   if (typePhone === 2) {
                     //Reply Notif.
-                    var androidPayload = {
+                    const androidPayload = {
                         data: {
                           title: circleName + unreadMsgsString,
                           body: msgUsername + ": " + msgText,
@@ -451,17 +444,14 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
             const p5 = p4.then(function (tokenArray) {
 
-              var batch = db.batch();
-
               // const increment = admin.firestore.FieldValue.increment(1);
-              var incrementPromiseArray = [];
+              let incrementPromiseArray = [];
               for (var i in chatUArray) {
                 const userID = chatUArray[i].userID;
                 const userRef = db.collection('Feed').doc(chatID).collection('Users').doc(userID);
                 const incrementPromise = userRef.update({ "unreadMsgs": admin.firestore.FieldValue.increment(1) });
                 incrementPromiseArray.push(incrementPromise);
               }
-
               return Promise.all(incrementPromiseArray);
             })
 
@@ -484,29 +474,26 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
     function autoDeleteFeedItems() {
 
-      let feedRef = db.collection('Feed');
-
-      const fp0 = feedRef.get().then(snapshot => {
-        var chatLaunchedArray = []; // Contains item that is [chatID, timeLaunched]
+      const p0 = db.collection('Feed').get().then(snapshot => {
+        let chatLaunchedArray = []; // Contains item that is [chatID, timeLaunched]
         snapshot.forEach(doc => {
-          console.log(doc.id, '=>', doc.data());
           if (doc.data()["timeLaunched"]) {
-            let timeLaunched = doc.data()["timeLaunched"];
-            let chatID = doc.id;
+            const timeLaunched = doc.data()["timeLaunched"];
+            const chatID = doc.id;
             chatLaunchedArray.push([chatID, timeLaunched]);
           }
         })
         return chatLaunchedArray;
       })
 
-      const fp1 = fp0.then(function (chatLaunchedArray)  {
+      const p1 = fp0.then(function (chatLaunchedArray)  {
 
-        var chatDeletionPromiseArray = [];
+        let chatDeletionPromiseArray = [];
 
         for(var i in chatLaunchedArray) {
 
-          let chatID = chatLaunchedArray[i][0];
-          let timeLaunched = chatLaunchedArray[i][1];
+          const chatID = chatLaunchedArray[i][0];
+          const timeLaunched = chatLaunchedArray[i][1];
 
           const currentDate = new Date();
           const currentDateInMS = Date.parse(currentDate);
@@ -514,7 +501,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
           const timeLaunchedDate = timeLaunched.toDate();
           const timeLaunchedInMS = Date.parse(timeLaunchedDate);
 
-          if((currentDateInMS - timeLaunchedInMS) > 86400000) { // in Millseconds
+          if((currentDateInMS - timeLaunchedInMS) > 86400000) { // currently 24h in Millseconds
             const deletionPromise = db.collection('Feed').doc(chatID).delete();
             chatDeletionPromiseArray.push(deletionPromise);
           }
@@ -524,7 +511,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
       })
 
-      return fp1;
+      return p1;
     }
 
 
