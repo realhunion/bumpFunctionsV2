@@ -218,11 +218,11 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 
       if (timeLaunched.isEqual(msgTimestamp)) {
         // return sendnotif to circle followers
-        return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText);
+        return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched);
       } else {
         console.log("popoff 2");
         // return sendnotif to chat followers
-        return sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText);
+        return sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched);
       }
 
     })
@@ -233,7 +233,7 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 
 
 // Send notification to chat followers. on 2nd 3rd 4th 5th msg.
-function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText) {
+function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched) {
 
         const p1 = getCircleFollowerIDArray(circleID);
 
@@ -269,6 +269,8 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
               const token = tokenArray[i][0]
               const typePhone = tokenArray[i][1]
 
+              const timeLaunchedEpochMS = Date.parse(timeLaunched.toDate()).toString();
+
               if (typePhone === 1) {
                 const iosPayload = {
                     notification: {
@@ -282,6 +284,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                       circleID: circleID,
                       circleName: circleName,
                       circleEmoji: circleEmoji,
+                      timeLaunched: timeLaunchedEpochMS,
                     },
                     apns: {
                       headers: {
@@ -312,6 +315,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                       circleID: circleID,
                       circleName: circleName,
                       circleEmoji: circleEmoji,
+                      timeLaunched: timeLaunchedEpochMS,
                     },
                     android: {
                       priority: "high",
@@ -332,7 +336,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
 
 
 
-function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText) {
+function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched) {
 
             //filtered chatUserArray
             let chatUArray = [];
@@ -383,6 +387,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                   console.log("boss " + unreadMsgs);
                   console.log("voss " + unreadMsgsString);
 
+                  const timeLaunchedEpochMS = Date.parse(timeLaunched.toDate()).toString();
 
                   if (typePhone === 1) {
                     //Reply Notif.
@@ -398,6 +403,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                           circleID: circleID,
                           circleName: circleName,
                           circleEmoji: circleEmoji,
+                          timeLaunched: timeLaunchedEpochMS,
                         },
                         apns: {
                           headers: {
@@ -428,6 +434,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                           circleID: circleID,
                           circleName: circleName,
                           circleEmoji: circleEmoji,
+                          timeLaunched: timeLaunchedEpochMS,
                         },
                         android: {
                           priority: "high",
