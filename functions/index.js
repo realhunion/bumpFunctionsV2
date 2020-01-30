@@ -199,7 +199,7 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 
     const chatID = context.params.chatID;
     const msgText = newValue.text;
-    const msgTimestamp = newValue.timestamp;
+    const msgTime = newValue.timestamp;
     const msgUsername = newValue.userName;
     const msgUserID = newValue.userID;
 
@@ -213,16 +213,16 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
       const circleID = feedChatInfoArray[0];
       const circleName = feedChatInfoArray[1];
       const circleEmoji = feedChatInfoArray[2];
-      const timeLaunched = feedChatInfoArray[3];
+      const launchTime = feedChatInfoArray[3];
       const firstMsgText = feedChatInfoArray[4];
 
-      if (timeLaunched.isEqual(msgTimestamp)) {
+      if (launchTime.isEqual(msgTime)) {
         // return sendnotif to circle followers
-        return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched);
+        return sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, launchTime, msgTime);
       } else {
         console.log("popoff 2");
         // return sendnotif to chat followers
-        return sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched);
+        return sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, launchTime, msgTime);
       }
 
     })
@@ -233,7 +233,7 @@ exports.newFeedChatMsgCreated = functions.firestore.document('/Feed/{chatID}/Mes
 
 
 // Send notification to chat followers. on 2nd 3rd 4th 5th msg.
-function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched) {
+function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, launchTime, msgTime) {
 
         const p1 = getCircleFollowerIDArray(circleID);
 
@@ -269,13 +269,15 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
               const token = tokenArray[i][0]
               const typePhone = tokenArray[i][1]
 
-              const timeLaunchedEpochMS = Date.parse(timeLaunched.toDate()).toString();
+              const launchTimeEpochMS = Date.parse(launchTime.toDate()).toString();
+              const msgTimeEpochMS = Date.parse(msgTime.toDate()).toString();
 
               if (typePhone === 1) {
                 const iosPayload = {
                     notification: {
-                        title: circleEmoji + " · " + circleName,
-                        body: msgText,
+                        // title: circleEmoji + " · " + circleName,
+                        // subtitle : "(Follow to receive notifs)",
+                        // body: msgText,
                     },
                     data: {
                       chatID: chatID,
@@ -284,7 +286,8 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                       circleID: circleID,
                       circleName: circleName,
                       circleEmoji: circleEmoji,
-                      timeLaunched: timeLaunchedEpochMS,
+                      timeLaunched: launchTimeEpochMS,
+                      msgTime: msgTimeEpochMS,
                     },
                     apns: {
                       headers: {
@@ -294,6 +297,11 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                       },
                       payload: {
                         aps: {
+                          alert : {
+                            subtitle: circleEmoji + " · " + circleName,
+                            title : "(Follow chat to get notifications)",
+                            body: msgText,
+                          },
                           // "content-available" : 1,
                           "sound":"default",
                         },
@@ -315,7 +323,8 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                       circleID: circleID,
                       circleName: circleName,
                       circleEmoji: circleEmoji,
-                      timeLaunched: timeLaunchedEpochMS,
+                      timeLaunched: launchTimeEpochMS,
+                      msgTime: msgTimeEpochMS,
                     },
                     android: {
                       priority: "high",
@@ -336,7 +345,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
 
 
 
-function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, timeLaunched) {
+function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msgText, msgUsername, msgUserID, firstMsgText, launchTime, msgTime) {
 
             //filtered chatUserArray
             let chatUArray = [];
@@ -387,7 +396,8 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                   console.log("boss " + unreadMsgs);
                   console.log("voss " + unreadMsgsString);
 
-                  const timeLaunchedEpochMS = Date.parse(timeLaunched.toDate()).toString();
+                  const launchTimeEpochMS = Date.parse(launchTime.toDate()).toString();
+                  const msgTimeEpochMS = Date.parse(msgTime.toDate()).toString();
 
                   if (typePhone === 1) {
                     //Reply Notif.
@@ -403,7 +413,8 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                           circleID: circleID,
                           circleName: circleName,
                           circleEmoji: circleEmoji,
-                          timeLaunched: timeLaunchedEpochMS,
+                          timeLaunched: launchTimeEpochMS,
+                          msgTime: msgTimeEpochMS,
                         },
                         apns: {
                           headers: {
@@ -434,7 +445,8 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                           circleID: circleID,
                           circleName: circleName,
                           circleEmoji: circleEmoji,
-                          timeLaunched: timeLaunchedEpochMS,
+                          timeLaunched: launchTimeEpochMS,
+                          msgTime: msgTimeEpochMS,
                         },
                         android: {
                           priority: "high",
