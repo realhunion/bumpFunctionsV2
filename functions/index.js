@@ -99,49 +99,41 @@ function sendNotificationToUsers(msgArray) {
 
 
 function getCircleFollowerIDArray(circleID) {
+    console.log("hi----111111111");
     return new Promise(function (resolve, reject) {
         db.collection('LaunchCircles').doc(circleID).collection('Followers').get()
             .then(snapshot => {
+              console.log("hi----");
               if (snapshot.empty) {
+                console.log("hi++++");
                 resolve([]);
                 return;
               }
+
+              console.log("hi,,,,,");
               let followerIDArray = [];
               snapshot.forEach(doc => {
-                followerIDArray.push(doc.id);
-              });
-              resolve(followerIDArray);
-              return;
-            })
-            .catch(err => {
-              console.log('Error getting documents', err);
-            });
-    })
-}
-
-function getChatFollowerIDArray(chatID) {
-    return new Promise(function (resolve, reject) {
-        db.collection('Feed').doc(chatID).collection('Users').get()
-            .then(snapshot => {
-              if (snapshot.empty) {
-                resolve([]);
-                return;
-              }
-              let followerIDArray = [];
-              snapshot.forEach(doc => {
-
-                if (doc.data()["isFollowing"]) {
-                  followerIDArray.push(doc.id);
+                console.log("hi0000", doc.data());
+                if(doc.data()["notificationsOn"]) {
+                  const notificationsOn = doc.data()["notificationsOn"];
+                  console.log("hi0", doc.id);
+                  if (notificationsOn === true) {
+                    console.log("hi1", notificationsOn);
+                    followerIDArray.push(doc.id);
+                  }
                 }
               });
+
               resolve(followerIDArray);
               return;
+
             })
             .catch(err => {
               console.log('Error getting documents', err);
             });
     })
 }
+
 
 function getChatUserArray(chatID) {
       const p1 = db.collection('Feed').doc(chatID).collection('Users').get()
