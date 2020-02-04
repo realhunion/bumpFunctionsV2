@@ -289,9 +289,10 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                       },
                       payload: {
                         aps: {
+                          category : "launchNotif",
                           alert : {
                             subtitle: circleEmoji + " · " + circleName,
-                            title : "(Follow chat to get notifications)",
+                            title : "(Follow chat to get message alerts)",
                             body: msgText,
                           },
                           // "content-available" : 1,
@@ -416,6 +417,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
                           },
                           payload: {
                             aps: {
+                              category : "replyNotif",
                               // "content-available" : 1,
                               "sound":"default",
                             },
