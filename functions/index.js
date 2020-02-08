@@ -485,46 +485,19 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
 
 
-    function autoDeleteFeedItems() {
+    function deleteAllFeedItems() {
 
       const p0 = db.collection('Feed').get().then(snapshot => {
-        let chatLaunchedArray = []; // Contains item that is [chatID, timeLaunched]
+        const deletionPromiseArray = []; // Contains item that is [chatID, timeLaunched]
         snapshot.forEach(doc => {
-          if (doc.data()["timeLaunched"]) {
-            const timeLaunched = doc.data()["timeLaunched"];
             const chatID = doc.id;
-            chatLaunchedArray.push([chatID, timeLaunched]);
-          }
-        })
-        return chatLaunchedArray;
-      })
-
-      const p1 = fp0.then(function (chatLaunchedArray)  {
-
-        let chatDeletionPromiseArray = [];
-
-        for(var i in chatLaunchedArray) {
-
-          const chatID = chatLaunchedArray[i][0];
-          const timeLaunched = chatLaunchedArray[i][1];
-
-          const currentDate = new Date();
-          const currentDateInMS = Date.parse(currentDate);
-
-          const timeLaunchedDate = timeLaunched.toDate();
-          const timeLaunchedInMS = Date.parse(timeLaunchedDate);
-
-          if((currentDateInMS - timeLaunchedInMS) > 86400000) { // currently 24h in Millseconds
             const deletionPromise = db.collection('Feed').doc(chatID).delete();
             chatDeletionPromiseArray.push(deletionPromise);
-          }
-        }
-
-        return chatDeletionPromiseArray;
-
+          })
+        return deletionPromiseArray;
       })
 
-      return p1;
+      return p0;
     }
 
 
@@ -534,3 +507,10 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
   //   // return autoDeleteFeedItems();
   //   return null;
   // })
+
+exports.autoDeleteFunction = functions.pubsub.schedule('1 4 * * *')
+  .timeZone('America/New_York') // Users can choose timezone - default is America/Los_Angeles
+  .onRun((context) => {
+  console.log('This will be run every day at 04:01 AM Eastern!');
+  return deleteAllFeedItems();
+});
