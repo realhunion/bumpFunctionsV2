@@ -488,7 +488,7 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
     function deleteAllFeedItems() {
 
       const p0 = db.collection('Feed').get().then(snapshot => {
-        const deletionPromiseArray = []; // Contains item that is [chatID, timeLaunched]
+        let deletionPromiseArray = []; // Contains item that is [chatID, timeLaunched]
         snapshot.forEach(doc => {
             const chatID = doc.id;
             const deletionPromise = db.collection('Feed').doc(chatID).delete();
