@@ -485,32 +485,52 @@ function sendChatMsgNotifications(chatID, circleID, circleName, circleEmoji, msg
 
 
 
-    function deleteAllFeedItems() {
-
-      const p0 = db.collection('Feed').get().then(snapshot => {
-        let deletionPromiseArray = []; // Contains item that is [chatID, timeLaunched]
-        snapshot.forEach(doc => {
-            const chatID = doc.id;
-            const deletionPromise = db.collection('Feed').doc(chatID).delete();
-            chatDeletionPromiseArray.push(deletionPromise);
-          })
-        return deletionPromiseArray;
-      })
-
-      return p0;
-    }
 
 
+function deleteFeedCollection(batchSize) {
+  let collectionRef = db.collection("Feed");
+  let query = collectionRef.limit(batchSize);
 
-  // exports.autoDeleteFunction = functions.pubsub.schedule('every 6 hours').onRun((context) => {
-  //   console.log('Auto Deletion just ran!');
-  //   // return autoDeleteFeedItems();
-  //   return null;
-  // })
+  return new Promise((resolve, reject) => {
+    deleteQueryBatch(db, query, batchSize, resolve, reject);
+  });
+}
 
-exports.autoDeleteFunction = functions.pubsub.schedule('1 4 * * *')
-  .timeZone('America/New_York') // Users can choose timezone - default is America/Los_Angeles
-  .onRun((context) => {
-  console.log('This will be run every day at 04:01 AM Eastern!');
-  return deleteAllFeedItems();
+function deleteQueryBatch(db, query, batchSize, resolve, reject) {
+  return query.get()
+    .then((snapshot) => {
+      // When there are no documents left, we are done
+      if (snapshot.size === 0) {
+        return 0;
+      }
+
+      // Delete documents in a batch
+      let batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      return batch.commit().then(() => {
+        return snapshot.size;
+      });
+    }).then((numDeleted) => {
+      if (numDeleted === 0) {
+        resolve();
+        return;
+      } else {
+        return process.nextTick(() => {
+          return deleteQueryBatch(db, query, batchSize, resolve, reject);
+        });
+      }
+
+      // Recurse on the next process tick, to avoid
+      // exploding the stack.
+
+    })
+    .catch(reject);
+}
+
+exports.autoDeleteFunction = functions.pubsub.schedule('1 3 * * *').timeZone('America/Chicago').onRun((context) => {
+  console.log('This will be run every day at 03:01 AM Central!');
+  return deleteFeedCollection(20);
 });
