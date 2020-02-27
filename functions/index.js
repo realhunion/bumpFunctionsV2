@@ -292,7 +292,7 @@ function sendCircleLaunchNotifications(chatID, circleID, circleName, circleEmoji
                           category : "launchNotif",
                           alert : {
                             subtitle: circleEmoji + " · " + circleName,
-                            title : "(Enable notifs for this chat)",
+                            title : "(Follow chat to stay notified)",
                             body: msgText,
                           },
                           // "content-available" : 1,
